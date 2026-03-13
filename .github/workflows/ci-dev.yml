@@ -76,4 +76,4 @@ jobs:
             --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
             --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
             -t classifier:ci-test \
-            ./classifier
+            ./ml-service
