@@ -29,7 +29,7 @@ services:
   # Classifier Service
   # ──────────────────────────────
   ml-service:
-    image: ${CLASSIFIER_IMAGE}
+    image: ${ML_SERVICE_IMAGE}
     build:
       context: ./ml-service
       args:
