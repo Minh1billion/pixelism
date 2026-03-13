@@ -15,7 +15,7 @@ export function SpriteCardPreview ({ item }: SpriteCardPreviewProps) {
     <div className='relative' style={{ width: '100%', aspectRatio: '1 / 1' }}>
       {/* 0. Background */}
       <Image
-        src='/sprite-card/themes/nature.png'
+        src='/sprite-card/themes/forest-theme.png'
         alt=''
         fill
         draggable={false}
