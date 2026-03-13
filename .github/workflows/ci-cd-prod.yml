@@ -1,0 +1,239 @@
+name: CI/CD — Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "22"
+  JAVA_VERSION: "17"
+  APP_DIR: ${{ vars.APP_DIR || '/app' }}
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-backend:latest
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-frontend:latest
+  ML_SERVICE_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-ml-service:latest
+  BACKEND_PORT: ${{ vars.BACKEND_PORT || '8080' }}
+  FRONTEND_PORT: ${{ vars.FRONTEND_PORT || '3000' }}
+
+jobs:
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client-shop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ./client-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./shop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Build (skip tests)
+        run: mvn clean install -DskipTests
+
+  docker-validate:
+    name: Validate Dockerfiles
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t backend:ci-test ./shop
+
+      - name: Build frontend image
+        run: docker build -t frontend:ci-test ./client-shop
+
+      - name: Build classifier image
+        run: |
+          docker build \
+            --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
+            --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
+            -t classifier:ci-test \
+            ./ml-service
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [docker-validate]
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build & Push Backend
+        run: |
+          docker build -t ${{ env.BACKEND_IMAGE }} ./shop
+          docker push ${{ env.BACKEND_IMAGE }}
+
+      - name: Build & Push Frontend
+        run: |
+          docker build -t ${{ env.FRONTEND_IMAGE }} ./client-shop
+          docker push ${{ env.FRONTEND_IMAGE }}
+
+      - name: Build & Push Classifier
+        run: |
+          docker build \
+            --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
+            --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
+            -t ${{ env.ML_SERVICE_IMAGE }} \
+            ./ml-service
+          docker push ${{ env.ML_SERVICE_IMAGE }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Trust EC2 host
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Build .env
+        run: |
+          printf '%s\n' \
+            "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" \
+            "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" \
+            "CLASSIFIER_IMAGE=${{ env.ML_SERVICE_IMAGE }}" \
+            "BACKEND_PORT=${{ env.BACKEND_PORT }}" \
+            "FRONTEND_PORT=${{ env.FRONTEND_PORT }}" \
+            "COMPOSE_PROJECT_NAME=pixelism" \
+            "DB_HOST=${{ secrets.DB_HOST }}" \
+            "DB_PORT=${{ secrets.DB_PORT }}" \
+            "DB_NAME=${{ secrets.DB_NAME }}" \
+            "DB_USER=${{ secrets.DB_USER }}" \
+            "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" \
+            "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+            "JWT_ACCESS_EXPIRATION=${{ secrets.JWT_ACCESS_EXPIRATION }}" \
+            "JWT_REFRESH_EXPIRATION=${{ secrets.JWT_REFRESH_EXPIRATION }}" \
+            "APP_COOKIE_SECURE=${{ vars.APP_COOKIE_SECURE }}" \
+            "OTP_EXPIRATION=${{ secrets.OTP_EXPIRATION }}" \
+            "OTP_LENGTH=${{ secrets.OTP_LENGTH }}" \
+            "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" \
+            "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" \
+            "FRONTEND_REDIRECT_URI=${{ secrets.FRONTEND_REDIRECT_URI }}" \
+            "OAUTH2_REDIRECT_BASE_URI=${{ secrets.OAUTH2_REDIRECT_BASE_URI }}" \
+            "CLIENT_ID_GOOGLE=${{ secrets.CLIENT_ID_GOOGLE }}" \
+            "CLIENT_SECRET_GOOGLE=${{ secrets.CLIENT_SECRET_GOOGLE }}" \
+            "CLIENT_ID_GITHUB=${{ secrets.CLIENT_ID_GITHUB }}" \
+            "CLIENT_SECRET_GITHUB=${{ secrets.CLIENT_SECRET_GITHUB }}" \
+            "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" \
+            "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" \
+            "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" \
+            "BACKEND_INTERNAL_URL=${{ vars.BACKEND_INTERNAL_URL }}" \
+            "API_URL=https://${{ secrets.EC2_HOST }}/api/v1" \
+            "BACKEND_URL=https://${{ secrets.EC2_HOST }}" \
+            "ML_SERVICE_URL=http://ml-service:8000" \
+            "HF_TOKEN=${{ secrets.HF_TOKEN }}" \
+            "HF_REPO_ID=${{ secrets.HF_REPO_ID }}" \
+            > /tmp/app.env
+
+      - name: Upload .env to EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ${{ env.APP_DIR }}"
+          scp /tmp/app.env ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ env.APP_DIR }}/.env
+
+      - name: Upload docker-compose.yml to EC2
+        run: |
+          scp docker-compose.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ env.APP_DIR }}/docker-compose.yml
+
+      - name: Upload scripts to EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ${{ env.APP_DIR }}/scripts"
+          scp scripts/*.sh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ env.APP_DIR }}/scripts/
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "chmod +x ${{ env.APP_DIR }}/scripts/*.sh"
+
+      - name: Deploy on EC2
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          APP_DIR: ${{ env.APP_DIR }}
+        run: |
+          ssh -o ServerAliveInterval=60 ${EC2_USER}@${EC2_HOST} \
+            APP_DIR="${APP_DIR}" \
+            DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME}" \
+            DOCKERHUB_TOKEN="${DOCKERHUB_TOKEN}" \
+            bash -s << 'ENDSSH'
+            set -e
+            cd "${APP_DIR}"
+            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+            docker compose --env-file .env pull
+            docker compose --env-file .env up -d --remove-orphans --force-recreate
+            docker image prune -f
+            echo "Deploy complete."
+          ENDSSH
+
+      - name: Health Check
+        run: |
+          echo "Waiting 30s for services to boot..."
+          sleep 30
+
+          BACKEND_OK=false
+          for i in $(seq 1 12); do
+            STATUS=$(curl --silent --max-time 10 -o /dev/null -w "%{http_code}" https://pixelism.duckdns.org/actuator/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend OK"
+              BACKEND_OK=true
+              break
+            fi
+            echo "Attempt $i/12 — status: $STATUS — retrying in 10s..."
+            sleep 10
+          done
+
+          if [ "$BACKEND_OK" = false ]; then
+            echo "ERROR: Backend health check failed after 12 attempts"
+            exit 1
+          fi
+
+          curl --fail --retry 3 --retry-delay 5 --max-time 10 \
+            https://pixelism.duckdns.org && echo "Frontend OK" \
+            || { echo "ERROR: Frontend health check failed"; exit 1; }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Status : ${{ job.status }}"
+          echo "Commit : ${{ github.sha }}"
+          echo "Actor  : ${{ github.actor }}"
+          echo "Time   : $(date '+%Y-%m-%d %H:%M:%S UTC')"

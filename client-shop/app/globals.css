@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+body {
+  font-family: var(--font-pixel);
+}
+
+* {
+  box-sizing: border-box;
+}
