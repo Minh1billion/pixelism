@@ -108,7 +108,7 @@ jobs:
           docker build -t ${{ env.FRONTEND_IMAGE }} ./client-shop
           docker push ${{ env.FRONTEND_IMAGE }}
 
-      - name: Build & Push Classifier
+      - name: Build & Push ML Service
         run: |
           docker build \
             --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
@@ -132,7 +132,7 @@ jobs:
           printf '%s\n' \
             "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" \
             "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" \
-            "CLASSIFIER_IMAGE=${{ env.ML_SERVICE_IMAGE }}" \
+            "ML_SERVICE_IMAGE=${{ env.ML_SERVICE_IMAGE }}" \
             "BACKEND_PORT=${{ env.BACKEND_PORT }}" \
             "FRONTEND_PORT=${{ env.FRONTEND_PORT }}" \
             "COMPOSE_PROJECT_NAME=pixelism" \

@@ -30,11 +30,7 @@ services:
   # ──────────────────────────────
   ml-service:
     image: ${ML_SERVICE_IMAGE}
-    build:
-      context: ./ml-service
-      args:
-        HF_TOKEN: ${HF_TOKEN}
-        HF_REPO_ID: ${HF_REPO_ID}
+    pull_policy: always
     container_name: ${COMPOSE_PROJECT_NAME}_ml_service
     environment:
       - PYTHONUNBUFFERED=1
@@ -54,6 +50,7 @@ services:
   # ──────────────────────────────
   shop-backend:
     image: ${BACKEND_IMAGE}
+    pull_policy: always
     build:
       context: ./shop
     mem_limit: 512m
@@ -125,6 +122,7 @@ services:
   # ──────────────────────────────
   shop-frontend:
     image: ${FRONTEND_IMAGE}
+    pull_policy: always
     build:
       context: ./client-shop
     mem_limit: 256m
