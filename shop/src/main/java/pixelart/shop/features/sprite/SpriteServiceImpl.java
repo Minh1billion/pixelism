@@ -29,6 +29,7 @@ import pixelart.shop.shared.infrastructure.storage.FileStorage;
 import pixelart.shop.shared.infrastructure.storage.UploadResult;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -137,9 +138,9 @@ public class SpriteServiceImpl implements SpriteService {
         if (categories.isEmpty()) {
             throw AppException.badRequest("At least one category is required");
         }
-        
+
         sprite.setName(request.name());
-        sprite.setCategories(categories);
+        sprite.setCategories(new ArrayList<>(categories));
         sprite.setPublic(request.isPublic());
 
         return SpriteResponse.from(spriteRepository.save(sprite));

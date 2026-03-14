@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useCallback, useRef, useMemo } from "react";
 import { SpriteService } from "@/features/sprite/api/sprite.client";
+import { usePagination } from "@/shared/hooks/usePagination";
 import { useDebounced } from "@/shared/hooks/useDebounced";
 import type {
   SpriteFilterRequest,
@@ -14,8 +15,6 @@ export type SpriteTab = "public" | "mine";
 interface SpritesState {
   tab: SpriteTab;
   filters: SpriteFilterRequest;
-  page: number;
-  size: number;
   data: PageResponse<SpriteListResponse> | null;
   overrides: SpriteListResponse[];
   loading: boolean;
@@ -25,7 +24,6 @@ interface SpritesState {
 type Action =
   | { type: "SWITCH_TAB"; tab: SpriteTab }
   | { type: "UPDATE_FILTERS"; partial: Partial<SpriteFilterRequest> }
-  | { type: "GO_TO_PAGE"; page: number }
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; data: PageResponse<SpriteListResponse> }
   | { type: "FETCH_ERROR"; message: string }
@@ -38,7 +36,6 @@ function reducer(state: SpritesState, action: Action): SpritesState {
       return {
         ...state,
         tab: action.tab,
-        page: 0,
         filters: {},
         overrides: [],
         error: null,
@@ -48,15 +45,6 @@ function reducer(state: SpritesState, action: Action): SpritesState {
       return {
         ...state,
         filters: { ...state.filters, ...action.partial },
-        page: 0,
-        overrides: [],
-        error: null,
-      };
-
-    case "GO_TO_PAGE":
-      return {
-        ...state,
-        page: action.page,
         overrides: [],
         error: null,
       };
@@ -95,26 +83,27 @@ function reducer(state: SpritesState, action: Action): SpritesState {
 
 interface UseSpritesOptions {
   initialData?: PageResponse<SpriteListResponse> | null;
+  pageSize?: number;
 }
 
-export function useSprites({ initialData }: UseSpritesOptions = {}) {
+export function useSprites({ initialData, pageSize = 42 }: UseSpritesOptions = {}) {
+  const { page, size, goToPage, reset } = usePagination(0, pageSize);
+
   const [state, dispatch] = useReducer(reducer, {
     tab: "public",
     filters: {},
-    page: 0,
-    size: 42,
     data: initialData ?? null,
     overrides: [],
     loading: !initialData,
     error: null,
   });
 
-  const debouncedSearch = useDebounced(state.filters.keyword ?? "", 400);
+  const debouncedKeyword = useDebounced(state.filters.keyword ?? "", 400);
 
-  const effectiveFilters = useMemo<SpriteFilterRequest>(() => ({
-    ...state.filters,
-    search: debouncedSearch || undefined,
-  }), [state.filters, debouncedSearch]);
+  const effectiveFilters = useMemo<SpriteFilterRequest>(
+    () => ({ ...state.filters, keyword: debouncedKeyword || undefined }),
+    [state.filters, debouncedKeyword]
+  );
 
   const isHydrated = useRef(false);
 
@@ -123,7 +112,7 @@ export function useSprites({ initialData }: UseSpritesOptions = {}) {
       !isHydrated.current &&
       initialData != null &&
       state.tab === "public" &&
-      state.page === 0;
+      page === 0;
 
     if (isInitialPublicView) {
       isHydrated.current = true;
@@ -133,13 +122,12 @@ export function useSprites({ initialData }: UseSpritesOptions = {}) {
     isHydrated.current = true;
 
     let cancelled = false;
-
     dispatch({ type: "FETCH_START" });
 
     const fetchFn =
       state.tab === "mine"
-        ? SpriteService.getMySprites(effectiveFilters, state.page, state.size)
-        : SpriteService.getSprites(effectiveFilters, state.page, state.size);
+        ? SpriteService.getMySprites(effectiveFilters, page, size)
+        : SpriteService.getSprites(effectiveFilters, page, size);
 
     fetchFn
       .then((data) => {
@@ -152,7 +140,7 @@ export function useSprites({ initialData }: UseSpritesOptions = {}) {
     return () => {
       cancelled = true;
     };
-  }, [state.tab, effectiveFilters, state.page, state.size]);
+  }, [state.tab, effectiveFilters, page, size]);
 
   const baseContent = state.data?.content ?? [];
   const overrideIds = new Set(state.overrides.map((s) => s.id));
@@ -160,6 +148,22 @@ export function useSprites({ initialData }: UseSpritesOptions = {}) {
     ...state.overrides,
     ...baseContent.filter((s) => !overrideIds.has(s.id)),
   ];
+
+  const switchTab = useCallback(
+    (tab: SpriteTab) => {
+      dispatch({ type: "SWITCH_TAB", tab });
+      reset();
+    },
+    [reset]
+  );
+
+  const updateFilters = useCallback(
+    (partial: Partial<SpriteFilterRequest>) => {
+      dispatch({ type: "UPDATE_FILTERS", partial });
+      reset();
+    },
+    [reset]
+  );
 
   const prependSprites = useCallback(
     (sprites: SpriteListResponse[]) =>
@@ -174,20 +178,19 @@ export function useSprites({ initialData }: UseSpritesOptions = {}) {
 
   return {
     tab: state.tab,
-    switchTab: (tab: SpriteTab) => dispatch({ type: "SWITCH_TAB", tab }),
+    switchTab,
 
     sprites,
     totalPages: state.data?.totalPages ?? 0,
     totalElements: state.data?.totalElements ?? 0,
-    page: state.page,
-    goToPage: (page: number) => dispatch({ type: "GO_TO_PAGE", page }),
+    page,
+    goToPage,
 
     loading: state.loading,
     error: state.error,
 
     filters: state.filters,
-    updateFilters: (partial: Partial<SpriteFilterRequest>) =>
-      dispatch({ type: "UPDATE_FILTERS", partial }),
+    updateFilters,
 
     prependSprites,
     removeSprite,

@@ -91,14 +91,13 @@ public class SpriteController {
         ));
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}")
     public ResponseEntity<ApiResponse<SpriteResponse>> update(
             @PathVariable UUID id,
-            @RequestPart("data") SpriteRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image
+            @RequestPart("data") SpriteRequest request
     ) throws IOException {
         return ResponseEntity.ok(ApiResponse.success(
-                spriteService.update(id, request, image)
+                spriteService.update(id, request)
         ));
     }
 
