@@ -15,7 +15,7 @@ export function UpdateSpritePreview({ item }: UpdateSpritePreviewProps) {
     <div className='flex flex-col items-center gap-3'>
       <p className='text-xs font-semibold text-neutral-500 uppercase tracking-wider'>Preview</p>
 
-      <div className='relative w-full max-w-45' style={{ aspectRatio: '1 / 1' }}>
+      <div className='relative w-full max-w-55' style={{ aspectRatio: '1 / 1' }}>
         {/* 0. Background */}
         <Image
           src='/sprite-card/themes/forest-theme.png'

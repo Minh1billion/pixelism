@@ -62,7 +62,7 @@ export function UpdateSpriteModal({
     <div className='fixed inset-0 z-9999 flex items-center justify-center'>
       <div className='absolute inset-0 bg-black/70 backdrop-blur-sm' onClick={handleClose} />
 
-      <div className='relative z-10 w-full max-w-2xl max-h-[90vh] flex flex-col bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl'>
+      <div className='relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl'>
 
         {/* Header */}
         <div className='flex items-center justify-between px-6 py-4 border-b border-neutral-800'>
@@ -91,6 +91,7 @@ export function UpdateSpriteModal({
 
         {/* Body — form (left) | preview (right) */}
         <div className='flex flex-1 min-h-0 overflow-hidden'>
+          {/* Form */}
           <div className='flex-1 overflow-y-auto px-6 py-5'>
             {categoriesError && (
               <div className='mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30'>
@@ -105,9 +106,11 @@ export function UpdateSpriteModal({
             />
           </div>
 
-          <div className='hidden sm:flex w-px bg-neutral-800 my-5' />
+          {/* Divider */}
+          <div className='w-px bg-neutral-800 my-5 shrink-0' />
 
-          <div className='hidden sm:flex sm:w-56 items-center justify-center px-6 py-5 shrink-0'>
+          {/* Preview */}
+          <div className='w-72 flex flex-col items-center justify-center gap-4 px-8 py-5 shrink-0 bg-neutral-900/30'>
             <UpdateSpritePreview item={item} />
           </div>
         </div>
