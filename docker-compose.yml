@@ -29,16 +29,27 @@ services:
   # Classifier Service
   # ──────────────────────────────
   ml-service:
+    build:
+      context: ./ml-service
+      args:
+        HF_REPO_ID: ${HF_REPO_ID}
+        HF_TOKEN: ${HF_TOKEN}
+
     image: ${ML_SERVICE_IMAGE}
     pull_policy: always
     container_name: ${COMPOSE_PROJECT_NAME}_ml_service
+
     environment:
       - PYTHONUNBUFFERED=1
+
     ports:
       - "8000:8000"
+
     networks:
       - app_network
+
     restart: unless-stopped
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s

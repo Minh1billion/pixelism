@@ -124,7 +124,7 @@ public class SpriteServiceImpl implements SpriteService {
 
     @Override
     @CacheEvict(value = {"sprites", "sprites-detail", "sprites-user"}, allEntries = true)
-    public SpriteResponse update(UUID id, SpriteRequest request, MultipartFile image) throws IOException {
+    public SpriteResponse update(UUID id, SpriteRequest request) {
         Sprite sprite = spriteRepository
                 .findWithDetailsById(id)
                 .orElseThrow(() -> AppException.notFound("Sprite does not exist"));
@@ -137,16 +137,7 @@ public class SpriteServiceImpl implements SpriteService {
         if (categories.isEmpty()) {
             throw AppException.badRequest("At least one category is required");
         }
-
-        if (image != null && !image.isEmpty()) {
-            if (sprite.getCloudinaryId() != null) {
-                deleteImage(sprite.getCloudinaryId());
-            }
-            UploadResult uploadResult = uploadImage(image);
-            sprite.setImageUrl(uploadResult.url());
-            sprite.setCloudinaryId(uploadResult.publicId());
-        }
-
+        
         sprite.setName(request.name());
         sprite.setCategories(categories);
         sprite.setPublic(request.isPublic());
