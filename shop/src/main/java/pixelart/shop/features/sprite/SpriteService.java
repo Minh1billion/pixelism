@@ -25,7 +25,7 @@ public interface SpriteService {
 
     SpriteResponse create(SpriteRequest request, MultipartFile image, User currentUser) throws IOException;
 
-    SpriteResponse update(UUID id, SpriteRequest request, MultipartFile image) throws IOException;
+    SpriteResponse update(UUID id, SpriteRequest request);
 
     void delete(UUID id) throws IOException;
 

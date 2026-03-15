@@ -103,12 +103,11 @@ export class SpriteService {
     static async update(
         id: string,
         data: SpriteRequest,
-        image?: File
     ): Promise<SpriteResponse> {
         try {
             const response = await api.put<ApiResponse<SpriteResponse>>(
                 `/sprites/${id}`,
-                this.buildFormData(data, image)
+                this.buildFormData(data)
             );
             if (!response.data.success) throw new Error(response.data.message);
             return response.data.data;

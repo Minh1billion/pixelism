@@ -1,8 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { GiScrollUnfurled } from "react-icons/gi";
 import { serverGetSprite } from "@/features/sprite/api/sprite.server";
-import { RelicImage } from "@/features/sprite/components/details/RelicImage";
-import { RelicInfo } from "@/features/sprite/components/details/RelicInfo";
+import { RelicDetailClient } from "@/features/sprite/components/details/RelicDetailClient";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -59,10 +58,7 @@ export default async function RelicDetailPage({ params }: Props) {
           Back to Sanctum
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <RelicImage imageUrl={sprite.imageUrl} name={sprite.name} />
-          <RelicInfo sprite={sprite} />
-        </div>
+        <RelicDetailClient sprite={sprite} />
       </div>
     </main>
   );
