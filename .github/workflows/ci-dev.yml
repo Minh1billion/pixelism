@@ -34,7 +34,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        # Không cần NEXT_PUBLIC_* nữa — URL inject runtime
 
   backend:
     name: Backend CI
@@ -69,11 +68,3 @@ jobs:
 
       - name: Build frontend image
         run: docker build -t frontend:ci-test ./client-shop
-
-      - name: Build classifier image
-        run: |
-          docker build \
-            --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
-            --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
-            -t classifier:ci-test \
-            ./ml-service

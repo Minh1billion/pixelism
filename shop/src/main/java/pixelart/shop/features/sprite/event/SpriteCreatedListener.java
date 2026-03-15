@@ -27,7 +27,7 @@ public class SpriteCreatedListener {
     private final RestTemplate restTemplate;
     private final StringRedisTemplate redisTemplate;
 
-    @Value("${shop.classifier.url}")
+    @Value("${npixie.api.url}")
     private String classifierUrl;
 
     @Async

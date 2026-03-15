@@ -12,7 +12,6 @@ env:
   APP_DIR: ${{ vars.APP_DIR || '/app' }}
   BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-backend:latest
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-frontend:latest
-  ML_SERVICE_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/pixelism-shop-ml-service:latest
   BACKEND_PORT: ${{ vars.BACKEND_PORT || '8080' }}
   FRONTEND_PORT: ${{ vars.FRONTEND_PORT || '3000' }}
 
@@ -77,14 +76,6 @@ jobs:
       - name: Build frontend image
         run: docker build -t frontend:ci-test ./client-shop
 
-      - name: Build classifier image
-        run: |
-          docker build \
-            --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
-            --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
-            -t classifier:ci-test \
-            ./ml-service
-
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
@@ -108,15 +99,6 @@ jobs:
           docker build -t ${{ env.FRONTEND_IMAGE }} ./client-shop
           docker push ${{ env.FRONTEND_IMAGE }}
 
-      - name: Build & Push ML Service
-        run: |
-          docker build \
-            --build-arg HF_TOKEN="${{ secrets.HF_TOKEN }}" \
-            --build-arg HF_REPO_ID="${{ secrets.HF_REPO_ID }}" \
-            -t ${{ env.ML_SERVICE_IMAGE }} \
-            ./ml-service
-          docker push ${{ env.ML_SERVICE_IMAGE }}
-
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -132,7 +114,6 @@ jobs:
           printf '%s\n' \
             "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" \
             "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" \
-            "ML_SERVICE_IMAGE=${{ env.ML_SERVICE_IMAGE }}" \
             "BACKEND_PORT=${{ env.BACKEND_PORT }}" \
             "FRONTEND_PORT=${{ env.FRONTEND_PORT }}" \
             "COMPOSE_PROJECT_NAME=pixelism" \
@@ -162,9 +143,7 @@ jobs:
             "BACKEND_INTERNAL_URL=${{ vars.BACKEND_INTERNAL_URL }}" \
             "API_URL=https://${{ secrets.EC2_HOST }}/api/v1" \
             "BACKEND_URL=https://${{ secrets.EC2_HOST }}" \
-            "ML_SERVICE_URL=http://ml-service:8000" \
-            "HF_TOKEN=${{ secrets.HF_TOKEN }}" \
-            "HF_REPO_ID=${{ secrets.HF_REPO_ID }}" \
+            "NPIXIE_API_URL=${{ secrets.NPIXIE_API_URL }}" \
             > /tmp/app.env
 
       - name: Upload .env to EC2
