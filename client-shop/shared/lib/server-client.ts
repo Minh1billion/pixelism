@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import type { ApiResponse } from '@/shared/types/shared.types'
 
 export const BACKEND_URL =
@@ -24,8 +25,16 @@ export async function serverFetch<T>(
   url: string,
   init?: RequestInit
 ): Promise<T> {
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join('; ')
+
   const res = await fetch(`${BACKEND_URL}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+    },
     ...init,
   })
 

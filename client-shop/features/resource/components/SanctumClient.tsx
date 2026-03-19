@@ -14,7 +14,7 @@ import type { CategoryResponse } from '@/features/category/types/category.types'
 import type { PageResponse } from '@/shared/types/shared.types'
 
 interface SanctumClientProps {
-  initialResources: PageResponse<ResourceListResponse>
+  initialResources: PageResponse<ResourceListResponse> | null
   initialCategories: CategoryResponse[]
   serverDurationMs: number
 }
@@ -31,7 +31,6 @@ export function SanctumClient({
 
   const [addOpen, setAddOpen] = useState(false)
 
-  // bridge: ResourceFilterRequest → SpriteFilterRequest shape for reusing existing filter UI
   const spriteFilters = { categoryIds: filters.categoryIds, keyword: filters.keyword, sortOrder: filters.sortOrder }
   const handleFilterChange = (partial: Partial<ResourceFilterRequest>) => updateFilters(partial)
 

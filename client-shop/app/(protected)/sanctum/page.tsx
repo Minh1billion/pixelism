@@ -3,19 +3,9 @@ import { RuneSeparator } from '@/shared/components/ui/RuneSeparator'
 import { SanctumClient } from '@/features/resource/components/SanctumClient'
 import { serverGetResources } from '@/features/resource/api/resource.server'
 import { serverGetCategories } from '@/features/category/api/category.server'
-import type { PageResponse } from '@/shared/types/shared.types'
-import type { ResourceListResponse } from '@/features/resource/types/resource.types'
 import type { CategoryResponse } from '@/features/category/types/category.types'
 
 export const dynamic = 'force-dynamic'
-
-const EMPTY_RESOURCES: PageResponse<ResourceListResponse> = {
-  content: [],
-  number: 0,
-  size: 42,
-  totalElements: 0,
-  totalPages: 0,
-}
 
 const EMPTY_CATEGORIES: CategoryResponse[] = []
 
@@ -38,7 +28,7 @@ async function loadSanctumData() {
 
   return {
     initialResources:
-      resourcesResult.status === 'fulfilled' ? resourcesResult.value : EMPTY_RESOURCES,
+      resourcesResult.status === 'fulfilled' ? resourcesResult.value : null,
     initialCategories:
       categoriesResult.status === 'fulfilled' ? categoriesResult.value : EMPTY_CATEGORIES,
     serverDurationMs,
