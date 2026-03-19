@@ -1,6 +1,6 @@
 package pixelart.shop.features.sprite.dto;
 
-import pixelart.shop.features.sprite.entity.Sprite;
+import pixelart.shop.features.resource.entity.SpriteResource;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,7 +14,7 @@ public record SpriteListResponse(
         LocalDateTime createdAt,
         LocalDateTime deletedAt
 ) {
-    public static SpriteListResponse from(Sprite s) {
+    public static SpriteListResponse from(SpriteResource s) {
         return new SpriteListResponse(
                 s.getId(),
                 s.getName(),

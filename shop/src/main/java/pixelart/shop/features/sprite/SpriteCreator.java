@@ -6,9 +6,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import pixelart.shop.features.category.entity.Category;
 import pixelart.shop.features.category.repository.CategoryRepository;
+import pixelart.shop.features.resource.entity.SpriteResource;
 import pixelart.shop.features.sprite.dto.SpriteRequest;
 import pixelart.shop.features.sprite.dto.SpriteResponse;
-import pixelart.shop.features.sprite.entity.Sprite;
 import pixelart.shop.features.sprite.repository.SpriteRepository;
 import pixelart.shop.features.user.entity.User;
 import pixelart.shop.shared.exception.AppException;
@@ -20,6 +20,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class SpriteCreator {
+
     private final SpriteRepository spriteRepository;
     private final CategoryRepository categoryRepository;
 
@@ -29,7 +30,7 @@ public class SpriteCreator {
         List<Category> categories = categoryRepository.findAllById(request.categoryIds());
         if (categories.isEmpty()) throw AppException.badRequest("At least one category is required");
 
-        Sprite sprite = Sprite.builder()
+        SpriteResource sprite = SpriteResource.builder()
                 .name(request.name())
                 .slug(generateUniqueSlug(request.name()))
                 .imageUrl(uploadResult.url())

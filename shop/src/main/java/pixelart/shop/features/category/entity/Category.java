@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import pixelart.shop.features.sprite.entity.Sprite;
+import pixelart.shop.features.resource.entity.Resource;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -40,7 +40,7 @@ public class Category implements Serializable {
 
     @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
     @Builder.Default
-    private List<Sprite> sprites = new ArrayList<>();
+    private List<Resource> resources = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -49,9 +49,9 @@ public class Category implements Serializable {
     private LocalDateTime updatedAt;
 
     @PreRemove
-    private void removeFromSprites() {
-        for (Sprite sprite : sprites) {
-            sprite.getCategories().remove(this);
+    private void removeFromResources() {
+        for (Resource resource : resources) {
+            resource.getCategories().remove(this);
         }
     }
 }

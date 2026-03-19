@@ -1,15 +1,15 @@
 import Image from 'next/image'
 import { RuneSeparator } from '@/shared/components/ui/RuneSeparator'
-import { SanctumClient } from '@/features/sprite/components/SanctumClient'
-import { serverGetSprites } from '@/features/sprite/api/sprite.server'
+import { SanctumClient } from '@/features/resource/components/SanctumClient'
+import { serverGetResources } from '@/features/resource/api/resource.server'
 import { serverGetCategories } from '@/features/category/api/category.server'
 import type { PageResponse } from '@/shared/types/shared.types'
-import type { SpriteListResponse } from '@/features/sprite/types/sprite.types'
+import type { ResourceListResponse } from '@/features/resource/types/resource.types'
 import type { CategoryResponse } from '@/features/category/types/category.types'
 
 export const dynamic = 'force-dynamic'
 
-const EMPTY_SPRITES: PageResponse<SpriteListResponse> = {
+const EMPTY_RESOURCES: PageResponse<ResourceListResponse> = {
   content: [],
   number: 0,
   size: 42,
@@ -22,34 +22,31 @@ const EMPTY_CATEGORIES: CategoryResponse[] = []
 async function loadSanctumData() {
   const fetchStart = Date.now()
 
-  const [spritesResult, categoriesResult] = await Promise.allSettled([
-    serverGetSprites({}, 0, 42),
+  const [resourcesResult, categoriesResult] = await Promise.allSettled([
+    serverGetResources({}, 0, 42),
     serverGetCategories(),
   ])
 
   const serverDurationMs = Date.now() - fetchStart
 
-  if (spritesResult.status === 'rejected') {
-    console.error('[SSR] serverGetSprites failed:', spritesResult.reason)
+  if (resourcesResult.status === 'rejected') {
+    console.error('[SSR] serverGetResources failed:', resourcesResult.reason)
   }
   if (categoriesResult.status === 'rejected') {
     console.error('[SSR] serverGetCategories failed:', categoriesResult.reason)
   }
 
   return {
-    initialSprites:
-      spritesResult.status === 'fulfilled' ? spritesResult.value : EMPTY_SPRITES,
+    initialResources:
+      resourcesResult.status === 'fulfilled' ? resourcesResult.value : EMPTY_RESOURCES,
     initialCategories:
-      categoriesResult.status === 'fulfilled'
-        ? categoriesResult.value
-        : EMPTY_CATEGORIES,
+      categoriesResult.status === 'fulfilled' ? categoriesResult.value : EMPTY_CATEGORIES,
     serverDurationMs,
   }
 }
 
 export default async function SanctumPage() {
-  const { initialSprites, initialCategories, serverDurationMs } =
-    await loadSanctumData()
+  const { initialResources, initialCategories, serverDurationMs } = await loadSanctumData()
 
   return (
     <main className='relative bg-neutral-950 text-white min-h-screen overflow-hidden'>
@@ -70,9 +67,7 @@ export default async function SanctumPage() {
         <div className='relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-16'>
           <div className='inline-flex items-center gap-2 bg-green-950/50 border border-green-400/20 px-4 py-2 rounded-full mb-8'>
             <div className='w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse' />
-            <span className='text-green-300 text-xs tracking-[0.25em] uppercase'>
-              The Sanctum
-            </span>
+            <span className='text-green-300 text-xs tracking-[0.25em] uppercase'>The Sanctum</span>
           </div>
 
           <h1 className='text-4xl sm:text-5xl md:text-7xl font-black leading-none tracking-tight mb-6'>
@@ -92,7 +87,7 @@ export default async function SanctumPage() {
 
       <section className='relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 -mt-4'>
         <SanctumClient
-          initialSprites={initialSprites}
+          initialResources={initialResources}
           initialCategories={initialCategories}
           serverDurationMs={serverDurationMs}
         />

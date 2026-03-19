@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import pixelart.shop.features.resource.entity.SpriteResource;
 import pixelart.shop.features.sprite.SpriteServiceImpl;
-import pixelart.shop.features.sprite.entity.Sprite;
 import pixelart.shop.features.sprite.repository.SpriteRepository;
 
 import java.io.IOException;
@@ -27,13 +27,13 @@ public class SpriteCleanupScheduler {
 
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30);
 
-        List<Sprite> oldDeletedSprites =
+        List<SpriteResource> oldDeletedSprites =
                 spriteRepository.findInactiveBefore(cutoffDate);
 
         int successCount = 0;
         int failureCount = 0;
 
-        for (Sprite sprite : oldDeletedSprites) {
+        for (SpriteResource sprite : oldDeletedSprites) {
             try {
                 spriteService.hardDelete(sprite.getId());
                 successCount++;
@@ -62,12 +62,12 @@ public class SpriteCleanupScheduler {
 
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysOld);
 
-        List<Sprite> oldDeletedSprites =
+        List<SpriteResource> oldDeletedSprites =
                 spriteRepository.findInactiveBefore(cutoffDate);
 
         log.info("Found {} sprites to cleanup", oldDeletedSprites.size());
 
-        for (Sprite sprite : oldDeletedSprites) {
+        for (SpriteResource sprite : oldDeletedSprites) {
             try {
                 spriteService.hardDelete(sprite.getId());
                 log.info("Cleaned up sprite: {} (ID: {})", sprite.getName(), sprite.getId());

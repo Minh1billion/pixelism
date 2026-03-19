@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import pixelart.shop.features.category.entity.Category;
-import pixelart.shop.features.sprite.entity.Sprite;
+import pixelart.shop.features.resource.entity.SpriteResource;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +46,7 @@ public class SpriteResponse {
         this.createdAt = createdAt;
     }
 
-    public static SpriteResponse from(Sprite s) {
+    public static SpriteResponse from(SpriteResource s) {
         return new SpriteResponse(
                 s.getId(),
                 s.getName(),

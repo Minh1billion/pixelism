@@ -8,8 +8,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import pixelart.shop.features.sprite.entity.Sprite;
-import pixelart.shop.features.sprite.entity.SpriteStatus;
+import pixelart.shop.features.resource.entity.ResourceStatus;
+import pixelart.shop.features.resource.entity.SpriteResource;
 import pixelart.shop.features.sprite.repository.SpriteRepository;
 import pixelart.shop.shared.sse.SseService;
 
@@ -51,11 +51,11 @@ public class SpriteCreatedListener {
             boolean isPixelart = Boolean.TRUE.equals(response.get("is_pixelart"));
             double confidence = ((Number) response.get("confidence")).doubleValue();
 
-            Sprite sprite = spriteRepository.findById(spriteId)
+            SpriteResource sprite = spriteRepository.findById(spriteId)
                     .orElseThrow(() -> new RuntimeException("Sprite not found: " + spriteId));
 
             if (isPixelart) {
-                sprite.setStatus(SpriteStatus.ACTIVE);
+                sprite.setStatus(ResourceStatus.ACTIVE);
                 spriteRepository.save(sprite);
                 log.info("[{}] ACTIVE confidence={}", spriteId, confidence);
                 sseService.send(userId, Map.of(
@@ -66,7 +66,7 @@ public class SpriteCreatedListener {
                 ));
             } else {
                 sprite.softDelete();
-                sprite.setStatus(SpriteStatus.REJECTED);
+                sprite.setStatus(ResourceStatus.REJECTED);
                 spriteRepository.save(sprite);
                 log.info("[{}] REJECTED confidence={}", spriteId, confidence);
                 sseService.send(userId, Map.of(
